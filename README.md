@@ -7,7 +7,7 @@ A DotNet service for adding stock to portfolio providing secure CRUD operations 
 * Entity Framework
 * AspNetCore Identity
 * AspNetCore Mvc NewtonsoftJson
-* AspNetCore.OpenApi
+* AspNetCore OpenApi
 
 ## Author
 
