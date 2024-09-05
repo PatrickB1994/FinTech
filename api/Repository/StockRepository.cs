@@ -29,12 +29,12 @@ namespace api.Repository
 
             if (!string.IsNullOrWhiteSpace(query.CompanyName))
             {
-                stocks = stocks.Where(s => s.CompanyName.Contains(query.CompanyName));
+                stocks = stocks.Where(s => s.CompanyName.ToLower().Contains(query.CompanyName.ToLower()));
             }
 
             if (!string.IsNullOrWhiteSpace(query.Symbol))
             {
-                stocks = stocks.Where(s => s.Symbol.Contains(query.Symbol));
+                stocks = stocks.Where(s => s.Symbol.ToLower().Contains(query.Symbol.ToLower()));
             }
 
             if (!string.IsNullOrWhiteSpace(query.SortBy))
@@ -52,7 +52,7 @@ namespace api.Repository
 
         public async Task<Stock?> GetByIdAsync(int id)
         {
-            return await _context.Stocks.Include(c => c.Comments).FirstOrDefaultAsync(i => i.Id == id);
+            return await _context.Stocks.Include(s => s.Comments).ThenInclude(c => c.AppUser).FirstOrDefaultAsync(i => i.Id == id);
         }
 
         public async Task<Stock?> UpdateAsync(int id, UpdateStockRequestDto stockDto)

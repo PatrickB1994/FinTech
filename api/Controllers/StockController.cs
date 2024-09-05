@@ -13,16 +13,16 @@ namespace api.Controllers
     [Authorize]
     public class StockController : ControllerBase
     {
-        private readonly IStockRepository _stockRepository;
-        public StockController(IStockRepository stockRepository)
+        private readonly IStockService _stockService;
+        public StockController(IStockService stockService)
         {
-            _stockRepository = stockRepository;
+            _stockService = stockService;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] QueryObject query)
         {
-            var stocks = await _stockRepository.GetAllAsync(query);
+            var stocks = await _stockService.GetAll(query);
             var stocksDto = stocks.Select(s => s.ToStockDto()).ToList();
             return Ok(stocksDto);
         }
@@ -30,10 +30,10 @@ namespace api.Controllers
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            var stock = await _stockRepository.GetByIdAsync(id);
+            var stock = await _stockService.GetById(id);
             if (stock == null)
             {
-                return NotFound();
+                return NotFound("Stock not found");
             }
             return Ok(stock.ToStockDto());
         }
@@ -45,11 +45,9 @@ namespace api.Controllers
             {
                 return BadRequest(ModelState);
             }
-            var stockModel = stockDto.ToStockfromCreateDto();
+            var stock = await _stockService.CreateStock(stockDto);
 
-            await _stockRepository.CreateAsync(stockModel);
-
-            return CreatedAtAction(nameof(GetById), new { id = stockModel.Id }, stockModel.ToStockDto());
+            return CreatedAtAction(nameof(GetById), new { id = stock.Id }, stock.ToStockDto());
         }
 
         [HttpPut("{id:int}")]
@@ -59,7 +57,8 @@ namespace api.Controllers
             {
                 return BadRequest(ModelState);
             }
-            var stockModel = await _stockRepository.UpdateAsync(id, updateStockDto);
+
+            var stockModel = await _stockService.UpdateStock(id, updateStockDto);
 
             if (stockModel == null)
             {
@@ -72,7 +71,7 @@ namespace api.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            var stockModel = await _stockRepository.DeleteAsync(id);
+            var stockModel = await _stockService.DeleteStock(id);
 
             if (stockModel == null)
             {
