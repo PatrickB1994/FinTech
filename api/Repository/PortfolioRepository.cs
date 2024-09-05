@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using api.Data;
+using api.Helpers;
 using api.Interfaces;
 using api.Models;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace api.Repository
 {
@@ -19,8 +22,21 @@ namespace api.Repository
 
         public async Task<Portfolio> CreateAsync(Portfolio portfolio)
         {
-            await _context.Portfolios.AddAsync(portfolio);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.Portfolios.AddAsync(portfolio);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException postgresEx && postgresEx.SqlState == "23505")
+            {
+                // Handle duplicate key violation (unique constraint)
+                throw new HttpException(HttpStatusCode.BadRequest, "A portfolio with the same key already exists.");
+            }
+            catch (Exception ex)
+            {
+                // Handle other exceptions
+                throw;
+            }
             return portfolio;
         }
 
