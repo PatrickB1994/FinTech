@@ -2,9 +2,7 @@ using api.Dtos.Comment;
 using api.Extensions;
 using api.Interfaces;
 using api.Mappers;
-using api.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers
@@ -14,27 +12,16 @@ namespace api.Controllers
     [Authorize]
     public class CommentController : ControllerBase
     {
-        private readonly ICommentRepository _commentRepository;
-        private readonly IStockRepository _stockRepository;
-        private readonly UserManager<AppUser> _userManager;
-
-        public CommentController(ICommentRepository commentRepository, IStockRepository stockRepository, UserManager<AppUser> userManager)
+        private readonly ICommentService _commentService;
+        public CommentController(ICommentService commentService)
         {
-            _commentRepository = commentRepository;
-            _stockRepository = stockRepository;
-            _userManager = userManager;
+            _commentService = commentService;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var comments = await _commentRepository.GetAllAsync();
-
-            // IEnumerable<CommentDto> commentDtos = 
-            // from comment in comments
-            // where comment.Id != 0
-            // select comment.ToCommentDto();
-
+            var comments = await _commentService.GetAll();
             var commentDtos = comments.Select(x => x.ToCommentDto());
             return Ok(commentDtos);
         }
@@ -42,8 +29,7 @@ namespace api.Controllers
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            var comment = await _commentRepository.GetByIdAsync(id);
-
+            var comment = await _commentService.GetById(id);
             if (comment == null)
             {
                 return NotFound();
@@ -58,17 +44,11 @@ namespace api.Controllers
             {
                 return BadRequest(ModelState);
             }
-            if (!await _stockRepository.StockExists(stockId))
+            var commentModel = await _commentService.CreateComment(stockId, User.GetUsername(), commentDto);
+            if (commentModel == null)
             {
                 return BadRequest("Stock does not exist");
             }
-
-            var username = User.GetUsername();
-            var appUser = await _userManager.FindByNameAsync(username);
-
-            var commentModel = commentDto.ToCommentFromCreateDto(stockId, appUser.Id);
-
-            await _commentRepository.CreateAsync(commentModel);
             return CreatedAtAction(nameof(GetById), new { id = commentModel.Id }, commentModel.ToCommentDto());
         }
 
@@ -79,7 +59,7 @@ namespace api.Controllers
             {
                 return BadRequest(ModelState);
             }
-            var comment = await _commentRepository.UpdateAsync(id, commentRequestDto.ToCommentFromUpdateDto());
+            var comment = await _commentService.UpdateComment(id, commentRequestDto);
             if (comment == null)
             {
                 return NotFound("Comment not found");
@@ -90,13 +70,11 @@ namespace api.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            var commentModel = await _commentRepository.DeleteAsync(id);
-
+            var commentModel = await _commentService.DeleteComment(id);
             if (commentModel == null)
             {
                 return NotFound();
             }
-
             return NoContent();
         }
 
