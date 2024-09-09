@@ -1,10 +1,10 @@
 namespace api.Helpers
 {
-    public class HttpExceptionMiddleware
+    public class BaseExceptionMiddleware
     {
         private readonly RequestDelegate _next;
 
-        public HttpExceptionMiddleware(RequestDelegate next)
+        public BaseExceptionMiddleware(RequestDelegate next)
         {
             _next = next;
         }
@@ -15,7 +15,7 @@ namespace api.Helpers
             {
                 await _next(context);
             }
-            catch (HttpException ex)
+            catch (BaseException ex)
             {
                 // Handle custom HttpStatusException and set the response code
                 context.Response.StatusCode = (int)ex.StatusCode;

@@ -36,5 +36,12 @@ namespace api.Controllers
             var result = await _accountService.Register(registerDto);
             return Ok(result);
         }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDto refreshDto)
+        {
+            var result = await _accountService.RefreshToken(refreshDto);
+            return Ok(result);
+        }
     }
 }

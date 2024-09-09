@@ -32,14 +32,14 @@ namespace api.Service
 
             if (stock == null)
             {
-                throw new HttpException(HttpStatusCode.NotFound, "Stock not found");
+                throw new BaseException(HttpStatusCode.NotFound, "Stock not found");
             }
 
             var userPortfolio = await _portfolioRepository.GetUserPortfolio(appUser);
 
             if (userPortfolio.Any(s => s.Symbol == symbol))
             {
-                throw new HttpException(HttpStatusCode.Found, "Stock already added");
+                throw new BaseException(HttpStatusCode.Found, "Stock already added");
             }
 
             var portfolioModel = new Portfolio
@@ -62,7 +62,7 @@ namespace api.Service
             }
             else
             {
-                throw new HttpException(HttpStatusCode.NotFound, "Stock not in portfolio");
+                throw new BaseException(HttpStatusCode.NotFound, "Stock not in portfolio");
             }
         }
     }

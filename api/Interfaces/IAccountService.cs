@@ -6,5 +6,6 @@ namespace api.Interfaces
     {
         Task<NewUserDto> Login(LoginDto loginDto);
         Task<NewUserDto> Register(RegisterDto registerDto);
+        Task<NewUserDto> RefreshToken(RefreshTokenDto refreshDto);
     }
 }

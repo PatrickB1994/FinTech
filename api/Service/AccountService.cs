@@ -10,14 +10,18 @@ namespace api.Service
 {
     public class AccountService : IAccountService
     {
+        private readonly IConfiguration _configuration;
         private readonly UserManager<AppUser> _userManager;
         private readonly ITokenService _tokenService;
         private readonly SignInManager<AppUser> _signInManager;
-        public AccountService(UserManager<AppUser> userManager, ITokenService tokenService, SignInManager<AppUser> signInManager)
+        private readonly string _loginProvider;
+        public AccountService(IConfiguration configuration, UserManager<AppUser> userManager, ITokenService tokenService, SignInManager<AppUser> signInManager)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _signInManager = signInManager;
+            _configuration = configuration;
+            _loginProvider = _configuration["JWT:LoginProvider"];
         }
 
         public async Task<NewUserDto> Login(LoginDto loginDto)
@@ -25,20 +29,25 @@ namespace api.Service
             var user = await _userManager.Users.FirstOrDefaultAsync(x => x.UserName == loginDto.UserName);
             if (user == null)
             {
-                throw new HttpException(HttpStatusCode.Unauthorized, "Bad credentials");
+                throw new BaseException(HttpStatusCode.Unauthorized, "Bad credentials");
             }
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
 
             if (!result.Succeeded)
             {
-                throw new HttpException(HttpStatusCode.Unauthorized, "Bad credentials");
+                throw new BaseException(HttpStatusCode.Unauthorized, "Bad credentials");
             }
+
+            var refreshToken = _tokenService.CreateRefreshToken(user);
+            await _userManager.SetAuthenticationTokenAsync(user, _loginProvider, "RefreshToken", refreshToken);
+
             return new NewUserDto
             {
                 UserName = user.UserName,
                 Email = user.Email,
-                token = _tokenService.CreateToken(user)
+                Token = _tokenService.CreateAccessToken(user),
+                RefreshToken = refreshToken
             };
         }
 
@@ -58,28 +67,64 @@ namespace api.Service
                     var roleResult = await _userManager.AddToRoleAsync(appUser, "User");
                     if (roleResult.Succeeded)
                     {
+                        var refreshToken = _tokenService.CreateRefreshToken(appUser);
+                        await _userManager.SetAuthenticationTokenAsync(appUser, _loginProvider, "RefreshToken", refreshToken);
+
                         return new NewUserDto
                         {
                             UserName = appUser.UserName,
                             Email = appUser.Email,
-                            token = _tokenService.CreateToken(appUser)
+                            Token = _tokenService.CreateAccessToken(appUser),
+                            RefreshToken = refreshToken
                         };
                     }
                     else
                     {
-                        throw new HttpException(HttpStatusCode.BadRequest, "Role error: " + roleResult.Errors);
+                        throw new BaseException(HttpStatusCode.BadRequest, "Role error: " + roleResult.Errors);
                     }
                 }
                 else
                 {
                     var errorMessage = string.Join(", ", createdUser.Errors.Select(error => error.Description));
-                    throw new HttpException(HttpStatusCode.BadRequest, "Create user error: " + errorMessage);
+                    throw new BaseException(HttpStatusCode.BadRequest, "Create user error: " + errorMessage);
                 }
             }
             catch (Exception e)
             {
-                throw new HttpException(HttpStatusCode.InternalServerError, e.Message);
+                throw new BaseException(HttpStatusCode.InternalServerError, e.Message);
             }
+        }
+
+        public async Task<NewUserDto> RefreshToken(RefreshTokenDto refreshDto)
+        {
+            var _refreshToken = refreshDto.RefreshToken;
+
+            if (!_tokenService.ValidateRefreshToken(_refreshToken))
+            {
+                throw new BaseException(HttpStatusCode.Unauthorized, "Invalid token");
+            }
+
+            var userName = _tokenService.GetUserName(_refreshToken);
+            var user = await _userManager.Users.FirstOrDefaultAsync(x => x.UserName == userName);
+
+            var cachedToken = await _userManager.GetAuthenticationTokenAsync(user, _loginProvider, "RefreshToken");
+
+            if (cachedToken == null || !cachedToken.Equals(_refreshToken))
+            {
+                throw new BaseException(HttpStatusCode.Unauthorized, "Invalid token");
+            }
+
+            await _userManager.RemoveAuthenticationTokenAsync(user, _loginProvider, _refreshToken);
+            var _newRefreshToken = _tokenService.CreateRefreshToken(user);
+            await _userManager.SetAuthenticationTokenAsync(user, _loginProvider, "RefreshToken", _newRefreshToken);
+
+            return new NewUserDto
+            {
+                UserName = user.UserName,
+                Email = user.Email,
+                Token = _tokenService.CreateAccessToken(user),
+                RefreshToken = _newRefreshToken
+            };
         }
     }
 }

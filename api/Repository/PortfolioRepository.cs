@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using api.Data;
 using api.Helpers;
 using api.Interfaces;
@@ -30,7 +26,7 @@ namespace api.Repository
             catch (DbUpdateException ex) when (ex.InnerException is PostgresException postgresEx && postgresEx.SqlState == "23505")
             {
                 // Handle duplicate key violation (unique constraint)
-                throw new HttpException(HttpStatusCode.BadRequest, "A portfolio with the same key already exists.");
+                throw new BaseException(HttpStatusCode.BadRequest, "A portfolio with the same key already exists.");
             }
             catch (Exception ex)
             {
