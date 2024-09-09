@@ -1,4 +1,5 @@
 using api.Dtos.Comment;
+using api.Helpers;
 using api.Interfaces;
 using api.Mappers;
 using api.Models;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace api.Service
 {
+    [LogAspect]
     public class CommentService : ICommentService
     {
         private readonly ICommentRepository _commentRepository;

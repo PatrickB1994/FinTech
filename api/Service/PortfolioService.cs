@@ -6,14 +6,16 @@ using Microsoft.AspNetCore.Identity;
 
 namespace api.Service
 {
+    [LogAspect]
     public class PortfolioService : IPortfolioService
     {
-
+        private readonly ILogger<PortfolioService> _logger;
         private readonly UserManager<AppUser> _userManager;
         private readonly IStockRepository _stockRepository;
         private readonly IPortfolioRepository _portfolioRepository;
-        public PortfolioService(UserManager<AppUser> userManager, IStockRepository stockRepository, IPortfolioRepository portfolioRepository)
+        public PortfolioService(ILogger<PortfolioService> logger, UserManager<AppUser> userManager, IStockRepository stockRepository, IPortfolioRepository portfolioRepository)
         {
+            _logger = logger;
             _userManager = userManager;
             _stockRepository = stockRepository;
             _portfolioRepository = portfolioRepository;
@@ -32,6 +34,7 @@ namespace api.Service
 
             if (stock == null)
             {
+                _logger.LogError("Stock not found: {}", symbol);
                 throw new BaseException(HttpStatusCode.NotFound, "Stock not found");
             }
 
@@ -39,6 +42,7 @@ namespace api.Service
 
             if (userPortfolio.Any(s => s.Symbol == symbol))
             {
+                _logger.LogError("Stock: {}, already added for user: {}", symbol, userName);
                 throw new BaseException(HttpStatusCode.Found, "Stock already added");
             }
 
@@ -62,6 +66,7 @@ namespace api.Service
             }
             else
             {
+                _logger.LogError("Stock: {}, not in portfolio of user: {}", symbol, userName);
                 throw new BaseException(HttpStatusCode.NotFound, "Stock not in portfolio");
             }
         }

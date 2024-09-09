@@ -9,12 +9,20 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using NLog;
+using NLog.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure NLog
+var logger = LogManager.Setup()
+    .LoadConfigurationFromFile("nlog.config")
+    .GetCurrentClassLogger();
+
+builder.Logging.ClearProviders(); // Remove default logging providers
+builder.Logging.AddNLog(); // Use NLog for logging
+
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-// builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(option =>
@@ -93,7 +101,6 @@ builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IPortfolioService, PortfolioService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
-
 
 var app = builder.Build();
 

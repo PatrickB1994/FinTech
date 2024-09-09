@@ -1,21 +1,25 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using api.Helpers;
 using api.Interfaces;
 using api.Models;
 using Microsoft.IdentityModel.Tokens;
 
 namespace api.Service
 {
+    [LogAspect]
     public class TokenService : ITokenService
     {
+        private readonly ILogger<TokenService> _logger;
         private readonly IConfiguration _configuration;
         private readonly SymmetricSecurityKey _key;
         private readonly SymmetricSecurityKey _refreshKey;
         private readonly int _accessDuration;
         private readonly int _refreshDuration;
-        public TokenService(IConfiguration configuration)
+        public TokenService(ILogger<TokenService> logger, IConfiguration configuration)
         {
+            _logger = logger;
             _configuration = configuration;
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:SigningKey"]));
             _refreshKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:RefreshSigningKey"]));
@@ -87,12 +91,12 @@ namespace api.Service
             }
             catch (SecurityTokenExpiredException)
             {
-                // Handle the case where the token has expired
+                _logger.LogError("Token expired: {}", token);
                 return false;
             }
             catch (SecurityTokenInvalidSignatureException)
             {
-                // Handle invalid signature
+                _logger.LogError("Token invalid signature: {}", token);
                 return false;
             }
             catch

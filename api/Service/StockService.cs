@@ -6,6 +6,7 @@ using api.Models;
 
 namespace api.Service
 {
+    [LogAspect]
     public class StockService : IStockService
     {
 

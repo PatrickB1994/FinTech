@@ -8,15 +8,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace api.Service
 {
+    [LogAspect]
     public class AccountService : IAccountService
     {
+        private readonly ILogger<AccountService> _logger;
         private readonly IConfiguration _configuration;
         private readonly UserManager<AppUser> _userManager;
         private readonly ITokenService _tokenService;
         private readonly SignInManager<AppUser> _signInManager;
         private readonly string _loginProvider;
-        public AccountService(IConfiguration configuration, UserManager<AppUser> userManager, ITokenService tokenService, SignInManager<AppUser> signInManager)
+        public AccountService(ILogger<AccountService> logger, IConfiguration configuration, UserManager<AppUser> userManager, ITokenService tokenService, SignInManager<AppUser> signInManager)
         {
+            _logger = logger;
             _userManager = userManager;
             _tokenService = tokenService;
             _signInManager = signInManager;
@@ -29,6 +32,7 @@ namespace api.Service
             var user = await _userManager.Users.FirstOrDefaultAsync(x => x.UserName == loginDto.UserName);
             if (user == null)
             {
+                _logger.LogError("Bad credentials for user: {}", loginDto.UserName);
                 throw new BaseException(HttpStatusCode.Unauthorized, "Bad credentials");
             }
 
@@ -36,6 +40,7 @@ namespace api.Service
 
             if (!result.Succeeded)
             {
+                _logger.LogError("Bad credentials for user: {}", loginDto.UserName);
                 throw new BaseException(HttpStatusCode.Unauthorized, "Bad credentials");
             }
 
@@ -80,17 +85,20 @@ namespace api.Service
                     }
                     else
                     {
+                        _logger.LogError("Role error: {}" + roleResult.Errors);
                         throw new BaseException(HttpStatusCode.BadRequest, "Role error: " + roleResult.Errors);
                     }
                 }
                 else
                 {
                     var errorMessage = string.Join(", ", createdUser.Errors.Select(error => error.Description));
+                    _logger.LogError("Create user error: {}" + errorMessage);
                     throw new BaseException(HttpStatusCode.BadRequest, "Create user error: " + errorMessage);
                 }
             }
             catch (Exception e)
             {
+                _logger.LogError("Create user exception: {}" + e.Message);
                 throw new BaseException(HttpStatusCode.InternalServerError, e.Message);
             }
         }
@@ -111,6 +119,7 @@ namespace api.Service
 
             if (cachedToken == null || !cachedToken.Equals(_refreshToken))
             {
+                _logger.LogError("Invalid token not in DB");
                 throw new BaseException(HttpStatusCode.Unauthorized, "Invalid token");
             }
 
