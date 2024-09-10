@@ -1,2 +1,0 @@
-2024-09-09 16:42:15.1526|ERROR|api.Service.AccountService|Bad credentials: patrick, P@ssword1231 
-2024-09-09 16:42:27.0151|ERROR|api.Service.AccountService|Bad credentials: patrick, P@ssword1231 

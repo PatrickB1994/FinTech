@@ -11,11 +11,21 @@ namespace api.Helpers
 
         public override void OnEntry(MethodExecutionArgs args)
         {
+            // Skip constructors
+            if (args.Method.IsConstructor)
+            {
+                return;
+            }
             Logger.Info($"Entering method {args.Method.Name} with arguments: {string.Join(", ", args.Arguments)}");
         }
 
         public override void OnExit(MethodExecutionArgs args)
         {
+            // Skip constructors
+            if (args.Method.IsConstructor)
+            {
+                return;
+            }
             if (args.Exception == null)
             {
                 Logger.Info($"Exiting method {args.Method.Name} executed successfully. Result: {args.ReturnValue}");
